@@ -2,7 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: openjdk:8-jdk
+      - image: classmethod/openjdk-with-git:8-jdk
     environment:
       _JAVA_OPTIONS: -Xmx3G
       GRADLE_OPTS: -Dorg.gradle.daemon=false
@@ -11,11 +11,11 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - v0-{{ .Branch }}-{{ checksum ".circleci/config.yml" }}-{{ checksum "build.gradle" }}-{{ checksum "gradle/wrapper/gradle-wrapper.properties" }}
-            - v0-{{ .Branch }}-{{ checksum ".circleci/config.yml" }}
-            - v0-{{ .Branch }}
-            - v0-develop
-            - v0-master
+            - spring-data-mirage-{{ .Branch }}-{{ checksum ".circleci/config.yml" }}-{{ checksum "build.gradle" }}-{{ checksum "gradle/wrapper/gradle-wrapper.properties" }}
+            - spring-data-mirage-{{ .Branch }}-{{ checksum ".circleci/config.yml" }}
+            - spring-data-mirage-{{ .Branch }}
+            - spring-data-mirage-develop
+            - spring-data-mirage-master
       - run:
           name: Show version
           command: ./gradlew -v
@@ -35,23 +35,11 @@ jobs:
       - store_test_results:
           path: build/test-results
       - deploy:
-          name: Deploy to JFrog Bintray
+          name: Deploy artifacts
           command: |
-            if [ -n "${CIRCLE_TAG}" -a -n "${BINTRAY_USER}" ]; then
-              ./gradlew bintrayUpload
-            fi
+            ./gradlew assemble publish showVersion
       - save_cache:
-          key: v0-{{ .Branch }}-{{ checksum ".circleci/config.yml" }}-{{ checksum "build.gradle" }}-{{ checksum "gradle/wrapper/gradle-wrapper.properties" }}
+          key: spring-data-mirage-{{ .Branch }}-{{ checksum ".circleci/config.yml" }}-{{ checksum "build.gradle" }}-{{ checksum "gradle/wrapper/gradle-wrapper.properties" }}
           paths:
             - "~/.gradle"
             - "~/.m2"
-
-workflows:
-  version: 2
-  all:
-    jobs:
-      - build:
-          context: bintray
-          filters:
-            tags:
-              only: /.*/

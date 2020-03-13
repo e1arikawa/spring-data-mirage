@@ -10,6 +10,7 @@ buildscript {
 		classpath "com.diffplug.spotless:spotless-plugin-gradle:3.18.0"
 		classpath "de.thetaphi:forbiddenapis:2.6"
 		classpath "de.aaschmid:gradle-cpd-plugin:2.0"
+		classpath "jp.classmethod.aws:gradle-aws-plugin:0.41"
 	}
 }
 
@@ -17,7 +18,6 @@ plugins {
 	id 'java-library'
 	id 'org.springframework.boot' version '2.1.5.RELEASE'
 	id 'maven-publish'
-	id "com.jfrog.bintray" version "1.8.4"
 }
 
 // basic plugins
@@ -45,7 +45,6 @@ apply from: "${rootProject.projectDir}/gradle/quality/spotless.gradle"
 apply from: "${rootProject.projectDir}/gradle/version.gradle"
 apply from: "${rootProject.projectDir}/gradle/resolveDependencies.gradle"
 apply from: "${rootProject.projectDir}/gradle/sourceArtifact.gradle"
-apply from: "${rootProject.projectDir}/gradle/bintray.gradle"
 
 group = "jp.xet.springframework.data.mirage"
 ext.artifactId = "spring-data-mirage"
@@ -68,7 +67,8 @@ javadoc {
 repositories {
 	jcenter()
 	mavenCentral()
-	maven { url 'http://dl.bintray.com/dai0304/spar-wings' }
+	maven { url "http://maven.classmethod.info/snapshot" } // for spar-wings
+	maven { url "http://maven.classmethod.info/release" } // for spar-wings
 }
 
 configurations {
@@ -111,4 +111,53 @@ jar {
 wrapper {
 	gradleVersion = '5.2.1'
 	distributionType = Wrapper.DistributionType.ALL
+}
+
+// ======== deploy ========
+apply plugin: "jp.classmethod.aws"
+aws {
+	profileName = null
+}
+publishing {
+	repositories {
+		maven {
+			def releasesRepoUrl = "${System.getenv("PUBLISH_REPOSITORY")}/release"
+			def snapshotsRepoUrl = "${System.getenv("PUBLISH_REPOSITORY")}/snapshot"
+			url version.endsWith("SNAPSHOT") ? snapshotsRepoUrl : releasesRepoUrl
+
+			credentials(AwsCredentials) {
+				def profileName = project.hasProperty("awsProfileForMetropolisRepo") ? project.awsProfileForMetropolisRepo : null
+				def cred = aws.newCredentialsProvider(profileName).credentials
+				accessKey cred.getAWSAccessKeyId()
+				secretKey cred.getAWSSecretKey()
+			}
+		}
+	}
+	
+	publications {
+		mavenJava(MavenPublication) {
+			from components.java
+			artifact sourcesJar {
+				classifier "sources"
+			}
+			artifact javadocJar {
+				classifier "javadoc"
+			}
+			pom.withXml {
+				asNode().children().last() + {
+					resolveStrategy = Closure.DELEGATE_FIRST
+					name project.name
+					description project.description
+					inceptionYear "2015"
+					licenses {
+						license {
+							name "The Apache Software License, Version 2.0"
+							url "http://www.apache.org/license/LICENSE-2.0.txt"
+							distribution "repo"
+						}
+					}
+				}
+			}
+		}
+	}
 }
