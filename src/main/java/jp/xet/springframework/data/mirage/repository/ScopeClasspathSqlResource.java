@@ -15,11 +15,14 @@
  */
 package jp.xet.springframework.data.mirage.repository;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.util.Assert;
 
 import org.slf4j.Logger;
@@ -37,6 +40,8 @@ import com.miragesql.miragesql.ClasspathSqlResource;
 public class ScopeClasspathSqlResource extends ClasspathSqlResource {
 	
 	private static Logger log = LoggerFactory.getLogger(ScopeClasspathSqlResource.class);
+	
+	private ClassPathResource classPathResource;
 	
 	
 	private static boolean existsResource(String absolutePath) {
@@ -142,10 +147,16 @@ public class ScopeClasspathSqlResource extends ClasspathSqlResource {
 	 */
 	public ScopeClasspathSqlResource(SqlResourceCandidate[] candidates) {
 		super(toAbsolutePath(candidates));
+		classPathResource = new ClassPathResource(toAbsolutePath(candidates));
 	}
 	
 	@Override
 	public String toString() {
 		return "SimpleSqlResource " + super.toString().substring(20);
+	}
+	
+	@Override
+	public InputStream getInputStream() throws IOException {
+		return classPathResource.getInputStream();
 	}
 }
