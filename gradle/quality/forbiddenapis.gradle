@@ -2,9 +2,9 @@ tasks.forbiddenApisMain {
     bundledSignatures += [
         'jdk-system-out',
         // TODO rewrite 'jdk-unsafe-' + project.sourceCompatibility,
-        'jdk-unsafe-' + 9,
+        'jdk-unsafe-' + 21,
         // TODO rewrite 'jdk-internal-' + project.sourceCompatibility
-        'jdk-internal-' + 9
+        'jdk-internal-' + 21
     ]
     signaturesFiles = fileTree(dir: "${rootProject.projectDir}/config/forbiddenapis", include: "*.txt")
     ignoreFailures = false
@@ -14,7 +14,7 @@ tasks.forbiddenApisTest {
     bundledSignatures += [
         'jdk-system-out',
         // TODO rewrite 'jdk-internal-' + project.sourceCompatibility
-        'jdk-internal-' + 9
+        'jdk-internal-' + 21
     ]
     signaturesFiles = fileTree(dir: "config/forbiddenapis-test", include: "*.txt")
     ignoreFailures = false
