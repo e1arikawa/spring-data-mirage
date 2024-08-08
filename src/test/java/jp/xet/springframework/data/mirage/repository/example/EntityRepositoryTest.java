@@ -20,12 +20,15 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.data.domain.Page;
@@ -33,15 +36,12 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.Iterables;
 
@@ -56,7 +56,7 @@ import jp.xet.springframework.data.mirage.repository.TestConfiguration;
  * 
  * @author daisuke
  */
-@RunWith(SpringRunner.class)
+@SpringBootTest
 @ContextConfiguration(classes = TestConfiguration.class)
 @Transactional
 @SuppressWarnings("javadoc")
@@ -95,22 +95,26 @@ public class EntityRepositoryTest {
 		assertThat(Iterables.size(all), is(7));
 	}
 	
-	@Ignore
-	@Test(expected = DuplicateKeyException.class)
+	@Disabled
+	@Test()
 	public void test_fail_to_create() {
-		assertThat(repo, is(notNullValue()));
-		assertThat(repo.count(), is(0L));
-		Entity foo = repo.create(new Entity("foo"));
-		assertThat(repo.count(), is(1L));
-		foo.setStr("bar");
-		repo.create(foo);
+        assertThrows(DuplicateKeyException.class, () -> {
+    		assertThat(repo, is(notNullValue()));
+    		assertThat(repo.count(), is(0L));
+    		Entity foo = repo.create(new Entity("foo"));
+    		assertThat(repo.count(), is(1L));
+    		foo.setStr("bar");
+    		repo.create(foo);
+        });
 	}
 	
-	@Test(expected = IncorrectResultSizeDataAccessException.class)
+	@Test()
 	public void test_fail_to_update() {
-		assertThat(repo, is(notNullValue()));
-		assertThat(repo.count(), is(0L));
-		repo.update(new Entity("foo"));
+        assertThrows(IncorrectResultSizeDataAccessException.class, () -> {
+    		assertThat(repo, is(notNullValue()));
+    		assertThat(repo.count(), is(0L));
+    		repo.update(new Entity("foo"));
+        });
 	}
 	
 	@Test
@@ -342,7 +346,7 @@ public class EntityRepositoryTest {
 		repo.save(new Entity("bar2"));
 		repo.save(new Entity("bar3"));
 		
-		Page<Entity> page1 = repo.findAll(new PageRequest(1/*zero based*/, 2, Direction.ASC, "str"));
+		Page<Entity> page1 = repo.findAll(PageRequest.of(1/*zero based*/, 2, Direction.ASC, "str"));
 		assertThat(page1.getNumber(), is(1));
 		assertThat(page1.getNumberOfElements(), is(2));
 		assertThat(page1.getTotalElements(), is(7L));
@@ -350,7 +354,7 @@ public class EntityRepositoryTest {
 		assertThat(page1.getContent().get(0).getStr(), is("bar3"));
 		assertThat(page1.getContent().get(1).getStr(), is("foo"));
 		
-		Page<Entity> page2 = repo.findAll(new PageRequest(2/*zero based*/, 2, Direction.ASC, "str"));
+		Page<Entity> page2 = repo.findAll(PageRequest.of(2/*zero based*/, 2, Direction.ASC, "str"));
 		assertThat(page2.getNumber(), is(2));
 		assertThat(page2.getNumberOfElements(), is(2));
 		assertThat(page2.getTotalElements(), is(7L));

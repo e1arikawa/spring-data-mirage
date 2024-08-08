@@ -75,7 +75,9 @@ public abstract class MirageQueryLookupStrategy implements QueryLookupStrategy {
 	@Override
 	public RepositoryQuery resolveQuery(Method method, RepositoryMetadata metadata, ProjectionFactory factory,
 			NamedQueries namedQueries) {
-		return resolveQuery(new MirageQueryMethod(method, metadata, factory), sqlManager, namedQueries);
+		MirageQueryMethod mirageQueryMethod = new MirageQueryMethod(method, metadata, factory);
+		mirageQueryMethod.validateQueryMethod();
+        return resolveQuery(mirageQueryMethod, sqlManager, namedQueries);
 	}
 	
 	/**

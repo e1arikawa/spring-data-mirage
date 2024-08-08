@@ -18,10 +18,12 @@ package jp.xet.springframework.data.mirage.repository.query;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
 
 import org.springframework.core.MethodParameter;
 import org.springframework.data.repository.query.DefaultParameters;
 import org.springframework.data.repository.query.Parameters;
+import org.springframework.data.repository.query.ParametersSource;
 
 import jp.xet.sparwings.spring.data.chunk.Chunkable;
 
@@ -43,11 +45,25 @@ public class ChunkableSupportedParameters
 	 * 
 	 * @param method must not be {@literal null}.
 	 */
-	public ChunkableSupportedParameters(Method method) {
-		super(method);
+	public ChunkableSupportedParameters(Method method, Function<MethodParameter, ChunkableSupportedParameter> parameterFactory) {
+		super(ParametersSource.of(method),parameterFactory);
 		List<Class<?>> types = Arrays.asList(method.getParameterTypes());
 		chunkableIndex = types.indexOf(Chunkable.class);
 	}
+
+    /**
+     * Creates a new {@link DefaultParameters} instance from the given {@link Method}.
+     * 
+     * @param method must not be {@literal null}.
+     */
+    public ChunkableSupportedParameters(ParametersSource source) {
+        super(source,parameter->{
+            return new ChunkableSupportedParameter(parameter);
+        });
+        Method method = source.getMethod();
+        List<Class<?>> types = Arrays.asList(method.getParameterTypes());
+        chunkableIndex = types.indexOf(Chunkable.class);
+    }
 	
 	private ChunkableSupportedParameters(List<ChunkableSupportedParameter> originals) {
 		super(originals);
@@ -84,10 +100,5 @@ public class ChunkableSupportedParameters
 	@Override
 	protected ChunkableSupportedParameters createFrom(List<ChunkableSupportedParameter> parameters) {
 		return new ChunkableSupportedParameters(parameters);
-	}
-	
-	@Override
-	protected ChunkableSupportedParameter createParameter(MethodParameter parameter) {
-		return new ChunkableSupportedParameter(parameter);
 	}
 }

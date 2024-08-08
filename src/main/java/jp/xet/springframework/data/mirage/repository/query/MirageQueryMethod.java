@@ -25,9 +25,10 @@ import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.data.projection.ProjectionFactory;
 import org.springframework.data.repository.core.RepositoryMetadata;
 import org.springframework.data.repository.query.Parameters;
+import org.springframework.data.repository.query.ParametersSource;
 import org.springframework.data.repository.query.QueryMethod;
 import org.springframework.data.repository.util.QueryExecutionConverters;
-import org.springframework.data.util.ClassTypeInformation;
+import org.springframework.data.util.TypeInformation;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -45,7 +46,7 @@ public class MirageQueryMethod extends QueryMethod {
 	private static Class<?> potentiallyUnwrapReturnTypeFor(Method method) {
 		if (QueryExecutionConverters.supports(method.getReturnType())) {
 			// unwrap only one level to handle cases like Future<List<Entity>> correctly.
-			return ClassTypeInformation.fromReturnTypeOf(method).getComponentType().getType();
+			return TypeInformation.fromReturnTypeOf(method).getComponentType().getType();
 		}
 		
 		return method.getReturnType();
@@ -71,7 +72,9 @@ public class MirageQueryMethod extends QueryMethod {
 		this.method = method;
 		this.metadata = metadata;
 		unwrappedReturnType = potentiallyUnwrapReturnTypeFor(method);
-		
+	}
+
+    public void validateQueryMethod() {
 		Assert.isTrue((isModifyingQuery() && getParameters().hasSpecialParameter()) == false,
 				String.format(Locale.ENGLISH, "Modifying method must not contain %s!", Parameters.TYPES));
 	}
@@ -143,8 +146,8 @@ public class MirageQueryMethod extends QueryMethod {
 	}
 	
 	@Override
-	protected Parameters<?, ?> createParameters(Method method) {
-		return new ChunkableSupportedParameters(method);
+	protected Parameters<?, ?> createParameters(ParametersSource source) {
+		return new ChunkableSupportedParameters(source);
 	}
 	
 	/**

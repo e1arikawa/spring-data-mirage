@@ -22,6 +22,7 @@ import org.springframework.core.MethodParameter;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.repository.query.Parameter;
+import org.springframework.data.util.TypeInformation;
 
 import jp.xet.sparwings.spring.data.chunk.Chunkable;
 
@@ -45,7 +46,7 @@ public class ChunkableSupportedParameter extends Parameter {
 	 * @param parameter
 	 */
 	public ChunkableSupportedParameter(MethodParameter parameter) {
-		super(parameter);
+		super(parameter, TypeInformation.of(Parameter.class));
 		this.parameter = parameter;
 	}
 	

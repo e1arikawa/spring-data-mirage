@@ -24,13 +24,12 @@ import static org.hamcrest.Matchers.not;
 import java.util.Arrays;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.repository.core.support.RepositoryFactorySupport;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 
 import com.google.common.collect.Iterables;
 import com.miragesql.miragesql.SqlManager;
@@ -40,7 +39,7 @@ import jp.xet.springframework.data.mirage.repository.support.MirageRepositoryFac
 import jp.xet.springframework.data.mirage.repository.example.User;
 import jp.xet.springframework.data.mirage.repository.example.UserRepository;
 
-@RunWith(SpringRunner.class)
+@SpringBootTest
 @ContextConfiguration(classes = TestConfiguration.class)
 @Transactional
 @SuppressWarnings("javadoc")
