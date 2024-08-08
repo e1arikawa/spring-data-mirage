@@ -6,34 +6,60 @@ buildscript {
 		maven { url "https://plugins.gradle.org/m2/" }
 	}
 	dependencies {
-		classpath "com.diffplug.spotless:spotless-plugin-gradle:3.18.0"
-		classpath "de.thetaphi:forbiddenapis:2.6"
-		classpath "de.aaschmid:gradle-cpd-plugin:2.0"
+		classpath "com.diffplug.spotless:spotless-plugin-gradle:6.25.0"
+		classpath "de.thetaphi:forbiddenapis:3.7"
+		classpath "de.aaschmid:gradle-cpd-plugin:3.2"
 		classpath "jp.classmethod.aws:gradle-aws-plugin:0.41"
 	}
 }
 
 plugins {
+	id 'java'
 	id 'java-library'
-	id 'org.springframework.boot' version '2.1.5.RELEASE'
+    id 'groovy'
+	id 'org.springframework.boot' version '3.3.2'
 	id 'maven-publish'
+	id 'eclipse'
+    id 'io.spring.dependency-management' version '1.1.6'
+    id 'checkstyle'
+    id 'pmd'
+    id 'jacoco'
+    id 'com.diffplug.spotless' version '6.11.0'
+    id 'com.github.spotbugs' version '6.0.19'
+    id 'jp.classmethod.aws' version '0.41'
+    id 'de.aaschmid.cpd' version '3.4'
+    id 'de.thetaphi.forbiddenapis' version '3.7'
 }
 
-// basic plugins
-apply plugin: 'io.spring.dependency-management'
-
-// code quality plugins
-apply plugin: "checkstyle"
-apply plugin: "findbugs"
-apply plugin: "pmd"
-apply plugin: "cpd"
-apply plugin: "jacoco"
-apply plugin: "de.thetaphi.forbiddenapis"
-apply plugin: "com.diffplug.gradle.spotless"
 
 // code quality configuration
 apply from: "${rootProject.projectDir}/gradle/quality/checkstyle.gradle"
-apply from: "${rootProject.projectDir}/gradle/quality/findbugs.gradle"
+
+// apply from: "${rootProject.projectDir}/gradle/quality/findbugs.gradle" //no use for import
+import com.github.spotbugs.snom.Effort;
+ 
+spotbugs {
+    toolVersion = "6.0.19"
+    effort = Effort.valueOf('MAX')
+    ignoreFailures = true
+}
+
+tasks.spotbugsMain {
+    reports {
+        xml.required.set(false)
+        html.required.set(true)
+    }
+    excludeFilter = file("${rootProject.projectDir}/config/spotbugs/excludeFilter.xml")
+}
+
+tasks.spotbugsTest {
+    reports {
+         xml.required.set(false)
+         html.required.set(true)
+    }
+    excludeFilter = file("${rootProject.projectDir}/config/spotbugs/excludeFilter-test.xml")
+}
+
 apply from: "${rootProject.projectDir}/gradle/quality/pmd.gradle"
 apply from: "${rootProject.projectDir}/gradle/quality/cpd.gradle"
 apply from: "${rootProject.projectDir}/gradle/quality/jacoco.gradle"
@@ -51,22 +77,39 @@ ext.artifactId = "spring-data-mirage"
 defaultTasks "clean", "build"
 
 // compiler
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+java {
+	sourceCompatibility = JavaVersion.VERSION_21
+	targetCompatibility = JavaVersion.VERSION_21
+}
 
-compileJava {
+test {
+    jvmArgs '--add-opens', 'java.base/java.lang=ALL-UNNAMED'
+    useJUnitPlatform()
+    testLogging {
+        events "passed", "skipped", "failed"
+        exceptionFormat "full"
+    }
+}
+
+tasks.withType(JavaCompile) {
+	options.encoding = 'UTF-8'
 	options.compilerArgs << "-Werror"
 	options.compilerArgs << "-Xlint:all" << "-Xlint:-processing" << "-Xlint:-deprecation"
 }
 
-javadoc {
+tasks.withType(Test) {
+    useJUnitPlatform()
+}
+
+tasks.withType(Javadoc) {
 	failOnError = false
 }
 
 repositories {
-	mavenCentral()
-	maven { url "http://maven.classmethod.info/snapshot" } // for spar-wings
-	maven { url "http://maven.classmethod.info/release" } // for spar-wings
+    mavenCentral()
+    mavenLocal()
+	maven { url "https://maven.classmethod.info/snapshot" } // for spar-wings
+	maven { url "https://maven.classmethod.info/release" } // for spar-wings
 }
 
 configurations {
@@ -87,15 +130,22 @@ dependencies {
 	implementation "com.miragesql:miragesql-integration:$mirageVersion"
 	compileOnly "org.springframework:spring-context"
 	compileOnly "org.springframework:spring-jdbc"
+    compileOnly "org.springframework:spring-tx"
 	compileOnly "jp.xet.spar-wings:spar-wings-spring-data-chunk:$sparWingsVersion"
 
 	// tests
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation "com.h2database:h2"
 	testImplementation "ch.qos.logback:logback-classic"
+    testImplementation "org.springframework:spring-context"
+    testImplementation "org.springframework:spring-jdbc"
+    testImplementation "org.springframework:spring-tx"
+    testImplementation "jp.xet.spar-wings:spar-wings-spring-data-chunk:$sparWingsVersion"
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.0'
 
-	pmd 'net.sourceforge.pmd:pmd-java:6.16.0'
-	pmd 'org.ow2.asm:asm:7.1'
+	pmd 'net.sourceforge.pmd:pmd-java:7.4.0'
+	pmd 'org.ow2.asm:asm:9.7'
 }
 
 bootJar {
@@ -107,55 +157,53 @@ jar {
 }
 
 wrapper {
-	gradleVersion = '5.2.1'
+	gradleVersion = '8.9'
 	distributionType = Wrapper.DistributionType.ALL
 }
 
 // ======== deploy ========
-apply plugin: "jp.classmethod.aws"
-aws {
-	profileName = null
-}
-publishing {
-	repositories {
-		maven {
-			def releasesRepoUrl = "${System.getenv("PUBLISH_REPOSITORY")}/release"
-			def snapshotsRepoUrl = "${System.getenv("PUBLISH_REPOSITORY")}/snapshot"
-			url version.endsWith("SNAPSHOT") ? snapshotsRepoUrl : releasesRepoUrl
+//aws {
+//    profileName = null
+//}
 
-			credentials(AwsCredentials) {
-				def profileName = project.hasProperty("awsProfileForMetropolisRepo") ? project.awsProfileForMetropolisRepo : null
-				def cred = aws.newCredentialsProvider(profileName).credentials
-				accessKey cred.getAWSAccessKeyId()
-				secretKey cred.getAWSSecretKey()
-			}
-		}
-	}
-	
-	publications {
-		mavenJava(MavenPublication) {
-			from components.java
-			artifact sourcesJar {
-				classifier "sources"
-			}
-			artifact javadocJar {
-				classifier "javadoc"
-			}
-			pom.withXml {
-				asNode().children().last() + {
-					resolveStrategy = Closure.DELEGATE_FIRST
-					name project.name
-					description project.description
-					inceptionYear "2015"
-					licenses {
-						license {
-							name "The Apache Software License, Version 2.0"
-							url "http://www.apache.org/license/LICENSE-2.0.txt"
-							distribution "repo"
-						}
-					}
-				}
-			}
-		}
-	}
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            artifact tasks.sourcesJar
+            artifact tasks.javadocJar
+            
+            pom.withXml {
+                asNode().children().last() + {
+                    resolveStrategy = Closure.DELEGATE_FIRST
+                    name project.name
+                    description project.description
+                    inceptionYear "2015"
+                    licenses {
+                        license {
+                            name "The Apache Software License, Version 2.0"
+                            url "http://www.apache.org/license/LICENSE-2.0.txt"
+                            distribution "repo"
+                        }
+                    }
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            def releasesRepoUrl = "${System.getenv("PUBLISH_REPOSITORY")}/release"
+            def snapshotsRepoUrl = "${System.getenv("PUBLISH_REPOSITORY")}/snapshot"
+            url = version.endsWith("SNAPSHOT") ? snapshotsRepoUrl : releasesRepoUrl
+
+//            credentials(AwsCredentials) {
+//                def profileName = project.hasProperty("awsProfileForMetropolisRepo") ? project.awsProfileForMetropolisRepo : null
+//                def cred = aws.newCredentialsProvider(profileName).credentials
+//                accessKey cred.getAWSAccessKeyId()
+//                secretKey cred.getAWSSecretKey()
+//            }
+        }
+
+        mavenLocal()
+    }
 }

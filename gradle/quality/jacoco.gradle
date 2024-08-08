@@ -1,9 +1,11 @@
 jacoco {
-	toolVersion = "0.8.0"
+    toolVersion = "0.8.11"
 }
+
 jacocoTestReport {
-	reports {
-		xml.enabled true
-		csv.enabled true
-	}
+    reports {
+        xml.required.set(true)
+        csv.required.set(true)
+        html.required.set(false)
+    }
 }
