@@ -141,8 +141,8 @@ dependencies {
     testImplementation "org.springframework:spring-jdbc"
     testImplementation "org.springframework:spring-tx"
     testImplementation "jp.xet.spar-wings:spar-wings-spring-data-chunk:$sparWingsVersion"
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.0'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.3'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.3'
 
 	pmd 'net.sourceforge.pmd:pmd-java:7.4.0'
 	pmd 'org.ow2.asm:asm:9.7'
